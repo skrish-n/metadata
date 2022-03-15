@@ -1,0 +1,1 @@
+Please follow the readme written in frontend directory to access the frontend of our MVP.
