@@ -5,7 +5,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.storage.metadata.model.Role;
@@ -14,14 +19,14 @@ import org.storage.metadata.repository.RoleRepository;
 import org.storage.metadata.repository.UserRepository;
 import org.storage.metadata.model.orchestrator.dto.LoginDTO;
 import org.storage.metadata.model.orchestrator.dto.SignUpDTO;
+import org.storage.metadata.security.jwt.JWTUtil;
 import org.storage.metadata.validator.UserValidator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
-public class UserAuthService {
+public class UserAuthService{
     public enum USER_AUTH_ACTION {
         USERNAME_TAKEN,
         EMAIL_TAKEN,
@@ -35,12 +40,17 @@ public class UserAuthService {
     private final UserValidator userValidator;
     private final RoleRepository roleRepository;
 
-    UserAuthService(RoleRepository roleRepository, AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder, UserValidator userValidator) {
+    private JWTUtil jwtUtil;
+
+    private Collection<? extends GrantedAuthority> authorities;
+
+    UserAuthService(RoleRepository roleRepository, AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder, UserValidator userValidator, JWTUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.userValidator = userValidator;
         this.roleRepository = roleRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     public USER_AUTH_ACTION registerUser(SignUpDTO signUpDto) {
@@ -72,16 +82,18 @@ public class UserAuthService {
         userRepository.save(user);
     }
 
-    public USER_AUTH_ACTION authenticateUser(LoginDTO loginDTO) {
+    public String authenticateUser(LoginDTO loginDTO) {
         try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                     loginDTO.getUsernameOrEmail(), loginDTO.getPassword()));
-
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            return USER_AUTH_ACTION.SIGNIN_SUCCESS;
+            String token = jwtUtil.generateToken(loginDTO.getUsernameOrEmail());
+           // return USER_AUTH_ACTION.SIGNIN_SUCCESS;
+            return token;
         } catch(Exception e) {
             e.printStackTrace();
-            return USER_AUTH_ACTION.SIGNIN_FAIL;
+            //return USER_AUTH_ACTION.SIGNIN_FAIL;
+            return "fail";
         }
     }
 

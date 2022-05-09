@@ -2,11 +2,13 @@ package org.storage.metadata.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.storage.metadata.model.File;
 import org.storage.metadata.model.orchestrator.dto.FileUploadDTO;
 import org.storage.metadata.service.FileService;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -24,8 +26,8 @@ public class FileController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Long> createFileMetadata(@RequestBody FileUploadDTO fileUploadDto){
-        Long fileId = fileService.insertFileData(fileUploadDto);
+    public ResponseEntity<Long> createFileMetadata(@RequestBody FileUploadDTO fileUploadDto, Authentication authentication, Principal principal){
+        Long fileId = fileService.insertFileData(fileUploadDto,authentication.getName());
         return new ResponseEntity<>(fileId, HttpStatus.OK);
     }
 
